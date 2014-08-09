@@ -33,24 +33,36 @@ disableTestCaseBuffer: 		Boolean to enable/disable test case buffer. More info o
 Used in demo-stuff:
 
 fuzzfile: 				Default client-file to be used as base for reBuildClientFile
+                            + File nay se duoc load len boi browser de bat dau qua trinh fuzz
+target:   				Indicates what client software we are targeting. Used for client specific parts of testcase generation and for file names saved by instrumentation.
+instrument: 			Instrumentation module is loaded in variable if interaction is needed.
+launch_command: 		Used by instrumentations: Holds the command that starts the client software.
+browser_args: 			Used by instrumentations: Holds the arguments that are given to client software when launched.
+result_dir: 			Used by instrumentations: Directory where instrumentations save logs and repro-files.
+asan_symbolize: 		Used by asan_instrumentations. Location for ASAN-symbolizer script.
 reBuildClientFile: 		Used when selected module needs alterations to client-file.
 result_dir: 			Used by instrumentations: Directory where instrumentations save logs and repro-files.
 */
 
 var config = {}
 
+// Used by nodefuzz.js. Defines how many previous testcases will be hold in previousTestCasesBuffer
 config.bufferSize=10
+// Holds bufferSize previous testcases sent to client
 //config.previousTestCasesBuffer=[]
 
 
 config.pid=process.pid 
+// Defines port for HTTP-server - dung lam port de thiet lap HTTP-server
 config.port=process.pid+2000
 
 config.timeout=20000
+// Defines how many testcases are sent in a row before actions are needed
 config.testCasesWithoutRestart=100
 
-
+// Duoc dung lam file mau => xay dung lai clientFile ban dau
 config.fuzzfile='./NodeFuzz.html'
+// Thu muc chua cac module fuzzer
 config.defaultModuleDirectory='./modules/'
 
 /*
@@ -63,6 +75,12 @@ config.grinder_key="AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPP"
 // if set to true will not run asan_symbolize and will attempt to report crash for symbolizing later
 config.no_symbolize=true
 */
+/*
+    Chua duong dan den file asan_symbolize.py
+    Vi du: 
+        chrome/src/tools/valgrind/asan/asan_symbolize.py
+        
+*/
 config.asan_symbolize='/path/to/your/asan_symbolize_new.py'
 
 
@@ -70,7 +88,8 @@ config.asan_symbolize='/path/to/your/asan_symbolize_new.py'
 reBuildClientFile modifies NodeFuzz.html content according to following values. 
 the client-file NodeFuzz.html has more tricks in it than just html-loading. ;)
 */
-config.reBuildClientFile=function (){
+config.reBuildClientFile=function ()
+{
 	//
 	//Write your own function in here if needed.
 	//
@@ -105,6 +124,7 @@ config.init=function(){
 		console.log('Loading linux-configuration.')
 		config.defaultInstrumentationFile = './instrumentations/instrumentation_linux_asan.js'
 		config.result_dir='../results/'
+        // duoc dung de tạo khai bao bien trong luc rebuil clientFile
 		config.type='text/html'
 		config.tagtype='html'
 

@@ -14,37 +14,46 @@ var path = require('path');
 
 var path=require('path')
 var fs=require('fs')
+
+// Tao 1 loat cac thu muc 
 var mkdirsSync = function (dirname, mode) {
-  if (mode === undefined) mode = 0777 ^ process.umask();
-  var pathsCreated = []
-  var pathsFound = [];
-  var fn = dirname;
-  while (true) {
-    try {
-      var stats = fs.statSync(fn);
-      if (stats.isDirectory())
-        break;
-      throw new Error('Unable to create directory at '+fn);
-    }
-    catch (e) {
-      if (e.errno == 34) {
-        pathsFound.push(fn);
-        fn = path.dirname(fn);
-      }
-      else {
-        throw e;
-      }
-    }
-  }
-  for (var i=pathsFound.length-1; i>-1; i--) {
-    var fn = pathsFound[i];
-    fs.mkdirSync(fn, mode);
-    pathsCreated.push(fn);
-  }
-  return pathsCreated;
+	if (mode === undefined) mode = 0777 ^ process.umask();
+	var pathsCreated = []
+	var pathsFound = [];
+	var fn = dirname;
+	while (true) 
+	{
+		try 
+		{
+			var stats = fs.statSync(fn);
+			if (stats.isDirectory())
+				break;
+			throw new Error('Unable to create directory at '+fn);
+		}
+		catch (e) {
+			if (e.errno == 34) 
+			{
+				pathsFound.push(fn);
+				fn = path.dirname(fn);
+			}
+			else 
+			{
+				throw e;
+			}
+		}
+	}
+	for (var i=pathsFound.length-1; i>-1; i--) 
+	{
+		var fn = pathsFound[i];
+		fs.mkdirSync(fn, mode);
+		pathsCreated.push(fn);
+	}
+	return pathsCreated;
 };
 
-function cloneArray(obj){
+// Tao ra 1 array moi giong het voi array tham so cua ham
+function cloneArray(obj)
+{
         var copy = [];
         for (var i = 0; i < obj.length; ++i) {
             copy[i] = obj[i];
@@ -212,32 +221,42 @@ var browserStartRetryRound=0
 var browser={}
 var asanlog=''
 var startBrowser = function(){
-		if(browser._closesNeeded==browser._closesGot || browserStartRetryRound > 30){
-			try{clearTimeout(timeoutBrowser);}catch(e){}
+		if(browser._closesNeeded==browser._closesGot || browserStartRetryRound > 30)
+		{
+			try{ clearTimeout(timeoutBrowser); }catch(e){}
 			setInstrumentationEvents()		
 			browserStartRetryRound=0
-			browser = spawn(config.launchCommand, config.browserArgs)
-			browser.stderr.on('data',function(data){
-				if(asanlog.length>0){
+			browser = spawn(config.launchCommand, config.browserArgs)			// ======================= START BROWSER PROCESS WITH ARGUMENTS =======================
+			
+			// Setup callback khi co CRASH xay ra
+			browser.stderr.on('data',function(data)
+			{
+				if(asanlog.length>0)
+				{
 					asanlog+=data.toString()
 				}
-				else if((data.toString()).indexOf("ERROR: AddressSanitizer")>-1){
+				else if((data.toString()).indexOf("ERROR: AddressSanitizer")>-1)
+				{
 					browser.removeAllListeners('exit');
 					clearInstrumentationEvents()
 					asanlog+=data.toString() 
-					setTimeout(function(){
-							if(asanlog.indexOf("ERROR: AddressSanitizer")>-1 && (asanlog.indexOf("address 0x00000000") == -1 || asanlog.indexOf("pc 0x00000000") > -1 ) && asanlog.indexOf("address 0x0000bbadbeef") == -1 && asanlog.indexOf("cpy-param-overlap") == -1){		
+					setTimeout(function()
+					{
+							if(asanlog.indexOf("ERROR: AddressSanitizer")>-1 && (asanlog.indexOf("address 0x00000000") == -1 || asanlog.indexOf("pc 0x00000000") > -1 ) && asanlog.indexOf("address 0x0000bbadbeef") == -1 && asanlog.indexOf("cpy-param-overlap") == -1)
+							{		
 								analyze(asanlog,config.previousTestCasesBuffer[0],cloneArray(config.previousTestCasesBuffer),startBrowser);	
 								browser.kill()
 							}
-							else{
+							else
+							{
 								browser.kill()
 								startBrowser()
 							}
 							asanlog=''
 					},350)
 				}	
-			})	
+			})
+			
 			browser.on('exit',function(){
 				asanlog=''
 				clearInstrumentationEvents()
@@ -247,7 +266,8 @@ var startBrowser = function(){
 				console.log('Failed to start browser with error: '+e)
 			})
 		}
-		else{
+		else
+		{
 			try{clearTimeout(timeoutBrowser);}catch(e){}
 			browserStartRetryRound++
 			if(browserStartRetryRound>=30){

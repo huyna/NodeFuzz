@@ -29,10 +29,11 @@ function loadModulesFromFolder(folder){
 }
 
 //
-//Function to check if file given is compatible to NodeFuzz.
+// Function to check if file given is compatible to NodeFuzz.
+//	+ Each module is required to export at least fuzz() method. 
+// 	+ Also init-method is recommended if module needs some initializing.
 //
-//Each module is required to export at least fuzz() method. Also init-method is recommended if module needs some initializing.
-//If module exports init() method then the init is executed when detected.
+// If module exports init() method then the init is executed when detected.
 //
 function requireModule(fileName){
 	if( fs.statSync(fileName).isDirectory() ){
@@ -40,8 +41,11 @@ function requireModule(fileName){
     }
 	else{    
 		var temp=require(fileName)
-		if(temp.hasOwnProperty('fuzz')){
-			if(temp.hasOwnProperty('init')){
+		if(temp.hasOwnProperty('fuzz'))		// fuzzer module must have fuzz() function ... 
+		{
+			if(temp.hasOwnProperty('init'))	// maybe or not have init() function
+			{
+				// call init() function if have
 				console.log('Found property init() from module '+fileName)
 				var tmp=temp.init()
 			}
@@ -73,6 +77,7 @@ function loadModules(){
 	console.log('We have '+returnArray.length+' modules available.')
 	return returnArray
 }
+
 module.exports={
 	loadModulesFromFolder: function(folder){
 		return loadModulesFromFolder(folder)

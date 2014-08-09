@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+// Print help message - -help --help
 if(process.argv.indexOf('help')!=-1 || process.argv.indexOf('-help')!=-1 || process.argv.indexOf('--help')!=-1){	
 	console.log('NodeFuzz v0.1.6')
 	console.log('Check config.js for about everything.')
@@ -21,10 +21,12 @@ var fs=require('fs')
 //Require for config and its init. (Note: config is required into global object so it can be used in 
 //communication between modules without separate requires.)
 //
-if(process.argv.indexOf('-c')!=-1 || process.argv.indexOf('--config')!=-1){
+if(process.argv.indexOf('-c')!=-1 || process.argv.indexOf('--config')!=-1)
+{
 	try{
 		console.log('Loading config-file: ')
-		if(process.argv.indexOf('-c')!=-1){
+		if(process.argv.indexOf('-c')!=-1)
+		{
 			console.log(process.argv[process.argv.indexOf('-c')+1])			
 			config=require(process.argv[process.argv.indexOf('-c')+1])
 		}
@@ -33,12 +35,14 @@ if(process.argv.indexOf('-c')!=-1 || process.argv.indexOf('--config')!=-1){
 			config=require(process.argv[process.argv.indexOf('--config')+1])
 		}
 	}
-	catch(e){
+	catch(e)
+	{
 		console.log('Error while loading given configuration-file.\n'+e)
 		process.exit(1)
 	}
 }
-else{
+else	// Neu khong nhap file config thi load file config.js mac dinh	
+{
 	console.log('Loading default configuration-file:\n./config.js')
 	try{
 		config=require('./config.js')
@@ -49,12 +53,19 @@ else{
 	}
 }
 
+//
+// CALL function config.init()
+//
 if(config.hasOwnProperty('init'))
 	config.init()
 else
 	console.log('config.js had no property init.')
 
-if(process.argv.indexOf('-i')!=-1 || process.argv.indexOf('--instrumentation')!=-1 ){
+//
+//	LOADING INSTRUMENTATION MODULE - default or specific
+//
+if(process.argv.indexOf('-i')!=-1 || process.argv.indexOf('--instrumentation')!=-1 )
+{
 	try{
 		console.log('Loading instrumentation-module: ')
 		if(process.argv.indexOf('-i')!=-1){
@@ -71,7 +82,8 @@ if(process.argv.indexOf('-i')!=-1 || process.argv.indexOf('--instrumentation')!=
 	//	process.exit(1)
 	}	
 }
-else{
+else
+{
 	console.log('Loading default instrumentation-module:')
 	if(config.defaultInstrumentationFile===undefined){
 		console.log('No default instrumentation-module defined. Check configuration for config.defaultInstrumentationFile')
@@ -87,14 +99,14 @@ else{
 	}
 }
 
-
-
 //
 //ModuleLoader for modules used as testcase generators.
 //
 var moduleLoader=require('./moduleLoader.js')
+// fuzzModules is array of fuzzer module - array of require() object
 var fuzzModules=moduleLoader.loadModules()
 
+// Ghi nhan so testcase da duoc gui cho client
 config.testCaseCounter=0
 
 var testCaseBuffer=[]
@@ -102,7 +114,8 @@ config.previousTestCasesBuffer=[]
 var previousTestCasesBuffer=config.previousTestCasesBuffer
 var httpRootDirSet
 
-function cloneArray(obj){
+function cloneArray(obj)
+{
         var copy = [];
         for (var i = 0; i < obj.length; ++i) {
             copy[i] = obj[i];
@@ -133,14 +146,20 @@ if(config.hasOwnProperty('httpRootDir')){
 
 var http = require('http');
 var websocketConnected=false
-var server = http.createServer(function(request, response) {
-	if(!websocketConnected){
-		if(request.url!='/favicon.ico'){
+var server = http.createServer(function(request, response) 
+{
+	if(!websocketConnected)
+	{
+		// khi nao thi "url" co chua "/favicon.ico"??? => khi nao thi browser request favicon.ico???
+		// 
+		if (request.url!='/favicon.ico')		
+		{
 			response.writeHead(200);
 		    response.write(config.clientFile)
 		    response.end();
 		}
-		else{
+		else
+		{
 			response.writeHead(404);
 			response.end();
 		}
@@ -160,6 +179,7 @@ var server = http.createServer(function(request, response) {
 
 });
 
+// Doan ma nay khien cho URL nhap vao o phia client (browser) se la: "http:\\localhost:[config.port]"
 server.listen(config.port, function(err) {
 		console.log('Server listening port '+config.port)
 });
@@ -192,28 +212,36 @@ if(config.addCustomWebSocketHandler)
 //websocketTimeout:  			Triggered if client fails to request new testcase within time defined by config.timeout.
 //websocketDisconnected: 		Triggered when the WebSocket-connection is disconnected
 //
-if(config.disableDefaultWsOnRequest!==true){								
+if(config.disableDefaultWsOnRequest!==true)
+{								
 	var testCasesWithoutRestartCounter=0
 	var sending=false
-	wsServer.on('request', function(request) {
+	
+	// Thiet lap callback de xu ly 'request' message
+	wsServer.on('request', function(request) 
+	{
 		websocketConnected=true
-		if(request.requestedProtocols !== null && request.requestedProtocols[0] == 'fuzz-protocol'){
+		if(request.requestedProtocols !== null && request.requestedProtocols[0] == 'fuzz-protocol')
+		{
 		    connection = request.accept('fuzz-protocol', request.origin);
 		    connection.on('message', function(message) {
-		    		if(!sending){
-			    		sending=true
-			    		testCasesWithoutRestartCounter++
-						try{clearTimeout(timeoutGetNewTestcase);}catch(e){}
-			    	if(testCasesWithoutRestartCounter > config.testCasesWithoutRestart){
+		    	if(!sending)
+				{
+			    	sending=true
+			    	testCasesWithoutRestartCounter++
+					try{clearTimeout(timeoutGetNewTestcase);}catch(e){}
+			    	if(testCasesWithoutRestartCounter > config.testCasesWithoutRestart)
+					{
 			    		sending=false
 						testCasesWithoutRestartCounter=0
-						instrumentationEvents.emit('testCasesWithoutRestartLimit')
+						instrumentationEvents.emit('testCasesWithoutRestartLimit')				// Ban ra event Restart neu so testcase da vuot qua nguong nao do!!!
 			    	}
-			    	else{
+			    	else
+					{
 			    		timeoutGetNewTestcase=setTimeout(function(){
 							sending=false
 							testCasesWithoutRestartCounter=0
-							instrumentationEvents.emit('websocketTimeout')
+							instrumentationEvents.emit('websocketTimeout')						// Ban ra event Timeout sau 1 khoang thoi gian de lam gi do
 						},config.timeout);
 			    		
 			    		sendNewTestCase(connection)
@@ -221,23 +249,26 @@ if(config.disableDefaultWsOnRequest!==true){
 		    	}
 			})
 		}
-		else if(request.requestedProtocols !== null && request.requestedProtocols[0] == 'feedback-protocol'){
+		else if(request.requestedProtocols !== null && request.requestedProtocols[0] == 'feedback-protocol')
+		{
 			feedbackConnection = request.accept('feedback-protocol', request.origin);
 	    	feedbackConnection.on('message', function(message) {
 		    		instrumentationEvents.emit('feedbackMessage',message.utf8Data)
 			})
 		}
-
-
 	})
-	wsServer.on('close',function(){
+	
+	// Thiet lap callback function de xu ly 'close' message
+	wsServer.on('close',function()
+	{
 		websocketConnected=false
 		testCasesWithoutRestartCounter=0
 		setTimeout(function(){instrumentationEvents.emit('websocketDisconnected')},500)
 	})
 }
 //
-//Helper function to get random element from array.
+//Helper function to get random element from array 
+// => Duoc dung de chon ngau nhien fuzzer module trong mang fuzzModules
 //
 function ra(a) {
 	return a[Math.floor(a.length*Math.random())]
@@ -254,7 +285,7 @@ function ra(a) {
 //
 //Modules used as testcase generators are taken randomly from modules loaded into variable fuzzModules by moduleLoader.js
 //
-//This funtion also updates previousTestCasesBuffer which holds n previous testcases where n is defined by variable config.buffer
+//This function also updates previousTestCasesBuffer which holds n previous testcases where n is defined by variable config.buffer
 //
 //If generator module returns empty string then this function will call itself with 20ms setTimeout. This feature
 //can be used to poll generator modules that need more time to do stuff.
@@ -265,31 +296,41 @@ function sendNewTestCase(connection){
 	config.testCaseCounter = config.testCaseCounter + 1;
 
 	var currentTestCase
-	if(!config.disableTestCaseBuffer){
-		if(testCaseBuffer.length==0){
+	if(!config.disableTestCaseBuffer)
+	{
+		if(testCaseBuffer.length==0)
+		{
 			process.nextTick(function(){testCaseBuffer.push((ra(fuzzModules)).fuzz())});
 			process.nextTick(function(){testCaseBuffer.push((ra(fuzzModules)).fuzz())});
 			currentTestCase=(ra(fuzzModules).fuzz())
 		}
-		else if(testCaseBuffer.length>=4){
+		else if(testCaseBuffer.length>=4)
+		{
 			currentTestCase=testCaseBuffer.pop()	
 		}
-		else{
+		else
+		{
 			process.nextTick(function(){testCaseBuffer.push((ra(fuzzModules)).fuzz())});
 			process.nextTick(function(){testCaseBuffer.push((ra(fuzzModules)).fuzz())});
 			currentTestCase=testCaseBuffer.pop()
 		}
 	}
-	else{
+	else
+	{
 		currentTestCase=(ra(fuzzModules).fuzz())
 	}
-	if(currentTestCase!==undefined && currentTestCase!=''){
+	
+	// Sau khi sinh ra duoc currentTestCase thi ... 
+	if(currentTestCase!==undefined && currentTestCase!='')
+	{
 		
-		if(previousTestCasesBuffer.unshift(currentTestCase)>config.bufferSize){
+		if(previousTestCasesBuffer.unshift(currentTestCase)>config.bufferSize) // Add new items to the beginning of an array
+		{
 			previousTestCasesBuffer.pop();
 		}
 		
-		if(currentTestCase instanceof Buffer){
+		if(currentTestCase instanceof Buffer)
+		{
 			connection.sendBytes(currentTestCase);
    		}
     	else{
@@ -298,7 +339,8 @@ function sendNewTestCase(connection){
     	}
     	sending=false
 	}
-	else{
+	else
+	{
 		setTimeout(function(){
 			sendNewTestCase(connection)
 		},50)

@@ -1,0 +1,40 @@
+
+Chú ý từ NodeFuzzer cũ - trên googlecode
+
+= NodeFuzz =
+
+NodeFuzz is a fuzzer for web browsers and browser like applications. There  is two main ideas behind NodeFuzz. First one is to create a simple and fast way to fuzz different browser. Second one is to have one framework that can be easily expanded, with new test case generators and client instrumentations, without modifications for the core of the fuzzer. 
+
+= Core =
+
+The core of the NodeFuzz is simple HTTP- and WebSocket-server written in NodeJS. It utilizes WebSocket-server implementation from NodeJS module [https://github.com/Worlize/WebSocket-Node WebSocket-Node]. The WebSocket is used because it allows fast and continuous connection between client-software under testing and the NodeFuzz. The continuous bi-directional TCP-connection allows small overhead when test cases are sent to the client and also allows instrumentation to have information from client if needed.
+
+= Reproducibility =
+
+Because in some cases the malfunction of the client software can happen as a cumulative effect of multiple test cases, the NodeFuzz core has a buffer for the sent test cases. The buffer is available for instrumentation modules and the size of the buffer can be adjusted by user trough configs.
+
+= Modules =
+
+In fuzzing the test case generators are the most important part after reproducibility. The NodeFuzz has its own module loader, which allows user to specify either a single file or the files from a folder to be used as a test case generator(s). The module loader detects NodeFuzz compatible modules by checking if they have exported fuzz-method. The exported fuzz-method when called should return a test case in a string- or buffer-form.
+
+=== Sample ===
+{{{
+ function generateTestCase(){
+   var returnString=''
+   for(x=0;x<10;x++){
+     returnString+='setTimeout(function(){document.body.style.zoom='+Math.random()*3+'},'+Math.floor(Math.random()*30)+')\n'
+   }
+   return returnString
+ }
+module.exports={
+ fuzz:function(){
+	return '<html><body><p>Hello Fuzz</p><script>'+generateTestCase()+'</script></body></html>'
+ }
+}
+}}}
+
+= Instrumentation =
+
+In the NodeFuzz instrumentation modules are used to control the client-software and to detect when client-software malfunctions. The instrumentation modules can be as simple as poll dmesg on linux for client crashes and save the buffer of previous test cases when crash occurs. 
+    + On linux, already working instrumentations have been created for ASAN-built browsers 
+    + On Windows there is prototype instrumentation that works together with PowerShell-scripts to detect crashes and analyze them with windbg. 
